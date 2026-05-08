@@ -128,7 +128,7 @@ if (instruction[0] == '/') continue;
         // [ OPCODE(4) | ADDRESS(28) ]
         else if (strcmp(instruction, "JMP") == 0) {
             toBinary(opcode,                         4,  bin,  0);
-            toBinary(atoi(op1) & 0x0FFFFFFF,         28, bin,  4);;
+            toBinary(atoi(op1) & 0x0FFFFFFF,         28, bin,  4);
         }
 
         memory[instructionCount] = binaryStringToInt(bin);
