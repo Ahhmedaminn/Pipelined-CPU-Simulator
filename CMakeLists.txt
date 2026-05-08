@@ -6,4 +6,8 @@ set(CMAKE_C_STANDARD 11)
 add_executable(main
         main.c
         parser.c
+        processor.c
+        pipeline.c
+        printer.c
+        instructions.c
 )
