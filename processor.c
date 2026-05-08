@@ -67,27 +67,21 @@ void print_registers(Processor *cpu) {
 
 void print_instruction_memory(Processor *cpu) {
     printf("\n===== INSTRUCTION MEMORY (0-1023) =====\n");
-    int printed = 0;
+
     for (int i = INSTR_MEM_START; i <= INSTR_MEM_END; i++) {
-        if (cpu->memory[i] != 0) {
-            printf("  MEM[%4d] = 0x%08X\n", i, (uint32_t)cpu->memory[i]);
-            printed++;
-        }
+        printf("  MEM[%4d] = 0x%08X\n", i, (uint32_t)cpu->memory[i]);
     }
-    if (printed == 0) printf("  (all zeros)\n");
+
     printf("========================================\n");
 }
 
 void print_data_memory(Processor *cpu) {
     printf("\n===== DATA MEMORY (1024-2047) =====\n");
-    int printed = 0;
+
     for (int i = DATA_MEM_START; i <= DATA_MEM_END; i++) {
-        if (cpu->memory[i] != 0) {
-            printf("  MEM[%4d] = %d\n", i, cpu->memory[i]);
-            printed++;
-        }
+        printf("  MEM[%4d] = %d\n", i, cpu->memory[i]);
     }
-    if (printed == 0) printf("  (all zeros)\n");
+
     printf("====================================\n");
 }
 

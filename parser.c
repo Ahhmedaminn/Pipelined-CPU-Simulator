@@ -3,14 +3,26 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-void toBinary(int number, int bits, char *output, int startIndex) {
+void toBinary(uint32_t number, int bits, char *output, int startIndex) {
     for (int i = bits - 1; i >= 0; i--) {
         output[startIndex++] = ((number >> i) & 1) ? '1' : '0';
     }
 }
 
 int getRegisterNumber(char *registerName) {
-    return atoi(registerName + 1);
+    if (registerName[0] != 'R') {
+        printf("[ERROR] Invalid register format: %s\n", registerName);
+        return -1;
+    }
+
+    int reg = atoi(registerName + 1);
+
+    if (reg < 0 || reg >= 32) {
+        printf("[ERROR] Register out of range: %s\n", registerName);
+        return -1;
+    }
+
+    return reg;
 }
 
 int32_t binaryStringToInt(char *bin) {
@@ -40,7 +52,10 @@ int parseAndLoad(int32_t *memory, int maxInstructions) {
         char op3[20] = "";
 
         sscanf(line, "%s %s %s %s", instruction, op1, op2, op3);
-        if (strlen(instruction) == 0) continue;
+
+if (strlen(instruction) == 0) continue;
+if (instruction[0] == '#') continue;
+if (instruction[0] == '/') continue;
 
         int opcode = -1;
         if (strcmp(instruction, "ADD")  == 0) opcode = 0;
@@ -113,7 +128,7 @@ int parseAndLoad(int32_t *memory, int maxInstructions) {
         // [ OPCODE(4) | ADDRESS(28) ]
         else if (strcmp(instruction, "JMP") == 0) {
             toBinary(opcode,                         4,  bin,  0);
-            toBinary((int)strtol(op1, NULL, 16),     28, bin,  4);
+            toBinary(atoi(op1) & 0x0FFFFFFF,         28, bin,  4);;
         }
 
         memory[instructionCount] = binaryStringToInt(bin);
