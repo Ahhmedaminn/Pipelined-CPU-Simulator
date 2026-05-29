@@ -1,94 +1,129 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdint.h>
+#include <stdlib.h>
+#include "processor.h"
+#include "parser.h"
+#include "pipeline.h"
+#include "printer.h"
 
-#define MEMORY_SIZE      2048
-#define NUM_REGISTERS    32
-#define ZERO_REGISTER    0
+/* ============================================================
+ * Simple console UI helpers
+ * ============================================================ */
 
-typedef struct {
-    int32_t memory[MEMORY_SIZE];
-    int32_t registers[NUM_REGISTERS];
-    int32_t PC;
-} Processor;
-
-/*
- * Functions from processor.c
- */
-void init_processor(Processor *cpu);
-void print_registers(Processor *cpu);
-void print_data_memory(Processor *cpu);
-
-/*
- * Function from parser.c
- */
-int parseAndLoad(int32_t *memory, int maxInstructions);
-
-/*
- * Function from instructions.c
- */
-void runInstructionExecutionTest(Processor *cpu, int totalInstructions, int maxSteps);
-
-/*
- * Converts an int32 back to a 32-character binary string for verification.
- */
-void intToBinaryString(int32_t value, char *bin) {
-    bin[32] = '\0';
-
-    for (int bit = 31; bit >= 0; bit--) {
-        bin[31 - bit] = ((value >> bit) & 1) ? '1' : '0';
-    }
+static void clear_screen(void) {
+#ifdef _WIN32
+    system("cls");
+#else
+    system("clear");
+#endif
 }
 
-int main() {
+static void pause_and_continue(void) {
+    printf("\nPress ENTER to continue...");
+    fflush(stdout);
+    /* flush any leftover newline first */
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+static void print_header(void) {
+    printf("=========================================\n");
+    printf("     PROCESSOR PIPELINE SIMULATOR        \n");
+    printf("  5-Stage: IF(2) ID(2) EX(2) MEM(1) WB(1)\n");
+    printf("=========================================\n\n");
+}
+
+static void print_menu(void) {
+    printf("  1) Run simulation (uses program.txt)\n");
+    printf("  2) Show program.txt contents\n");
+    printf("  0) Exit\n\n");
+    printf("Choice: ");
+    fflush(stdout);
+}
+
+/* Read and display the current program.txt */
+static void show_program_file(void) {
+    clear_screen();
+    print_header();
+    printf("--- Contents of program.txt ---\n\n");
+
+    FILE *f = fopen("program.txt", "r");
+    if (!f) {
+        printf("  (file not found)\n");
+    } else {
+        char line[128];
+        int n = 0;
+        while (fgets(line, sizeof(line), f)) {
+            line[strcspn(line, "\n")] = '\0';
+            if (strlen(line) > 0)
+                printf("  [%2d]  %s\n", n++, line);
+        }
+        fclose(f);
+        if (n == 0) printf("  (file is empty)\n");
+    }
+    pause_and_continue();
+}
+
+/* Run the full simulation */
+static void run_simulation(void) {
+    clear_screen();
+    print_header();
+
     Processor cpu;
     init_processor(&cpu);
 
-    /*
-     * Parse program.txt and load encoded instructions into processor memory.
-     */
-    int total = parseAndLoad(cpu.memory, 1024);
-
-    if (total == -1) {
-        printf("Failed to load program.\n");
-        return 1;
+    int total = parseAndLoadFile(cpu.memory, 1024, "program.txt");
+    if (total <= 0) {
+        printf("\n[ERROR] Could not load program.txt\n");
+        printf("Make sure program.txt exists in the same folder as this program.\n");
+        pause_and_continue();
+        return;
     }
 
-    /*
-     * Verify that instructions were stored in memory as 32-bit encoded values.
-     */
-    printf("===== Verification: Instructions in Processor Memory =====\n");
+    printf("Loaded %d instruction(s).\n", total);
 
-    for (int i = 0; i < total; i++) {
-        char bin[33];
-        intToBinaryString(cpu.memory[i], bin);
+    runPipeline(&cpu, total);
 
-        printf("cpu.memory[%2d] = %s  (0x%08X)\n",
-               i, bin, (uint32_t) cpu.memory[i]);
+    print_all_registers(&cpu);
+    print_data_memory_nonzero(&cpu);
+
+    printf("\nShow full memory dump? (y/n): ");
+    fflush(stdout);
+    char buf[8];
+    if (fgets(buf, sizeof(buf), stdin) && (buf[0] == 'y' || buf[0] == 'Y')) {
+        print_instruction_memory(&cpu, total);
+        print_data_memory_full(&cpu);
     }
 
-    /*
-     * Before execution, all registers should still be 0.
-     */
-    printf("\n===== Registers before execution =====\n");
+    pause_and_continue();
+}
 
-    for (int i = 0; i < NUM_REGISTERS; i++) {
-        printf("  R%-2d = %d\n", i, cpu.registers[i]);
+/* ============================================================
+ * Main
+ * ============================================================ */
+int main(void) {
+    char input[8];
+
+    while (1) {
+        clear_screen();
+        print_header();
+        print_menu();
+
+        if (!fgets(input, sizeof(input), stdin)) break;
+        int choice = atoi(input);
+
+        switch (choice) {
+            case 1: run_simulation();    break;
+            case 2: show_program_file(); break;
+            case 0:
+                clear_screen();
+                printf("Goodbye.\n\n");
+                return 0;
+            default:
+                printf("  Invalid choice.\n");
+                pause_and_continue();
+        }
     }
-
-    printf("  PC  = %d\n", cpu.PC);
-
-    /*
-     * Part C test: decode and execute instructions one by one.
-     * This is temporary. Part D will later replace this with pipeline execution.
-     */
-    runInstructionExecutionTest(&cpu, total, 50);
-
-    /*
-     * Print final results after execution.
-     */
-    print_registers(&cpu);
-    print_data_memory(&cpu);
 
     return 0;
 }
