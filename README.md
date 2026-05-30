@@ -6,7 +6,7 @@
 |---------------------|------|----------|
 | Ahmed Amin          | 19002035 | 1        |
 | Abd el Rahman Gamal | 19002030 | 2        |
-| Ziad Tarek          | 22001257 | 1        |
+| Ziad Tarek          | 22001257 | 2        |
 | Mohamed Waleed      | 19002146 | 2        |
  | Karma El Sabahy | 22001230 | 1 | 
 
